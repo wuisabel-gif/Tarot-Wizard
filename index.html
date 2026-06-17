@@ -3,22 +3,922 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Tarot Wizard — AI Creative Edition</title>
+    <title>Tarot Wizard</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Syncopate:wght@700&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Cinzel:wght@400;600;700;900&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+      :root {
+        --gold: #e3c178;
+        --gold-bright: #f8e2ac;
+        --amethyst: #9d7bea;
+        --amethyst-bright: #c4a8ff;
+        --teal: #67dad8;
+        --text-parchment: #f3e9d6;
+      }
+      * { box-sizing: border-box; }
+      html, body { height: 100%; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: 'Cormorant Garamond', serif;
+        color: var(--text-parchment);
+        background:
+          radial-gradient(150% 130% at 50% -15%, #2a1d44 0%, #18102e 30%, #0d0820 60%, #070411 100%);
+        display: flex; align-items: center; justify-content: center;
+        overflow-x: hidden; position: relative;
+      }
+      body::before {
+        content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+        background:
+          radial-gradient(55% 45% at 50% 36%, rgba(157,123,234,0.12), transparent 70%),
+          radial-gradient(40% 35% at 80% 70%, rgba(103,218,216,0.07), transparent 70%),
+          radial-gradient(1.5px 1.5px at 18% 26%, rgba(255,255,255,0.4), transparent),
+          radial-gradient(1.5px 1.5px at 82% 18%, rgba(196,168,255,0.4), transparent),
+          radial-gradient(1px 1px at 62% 72%, rgba(255,255,255,0.3), transparent),
+          radial-gradient(1px 1px at 33% 84%, rgba(103,218,216,0.3), transparent);
+      }
+      .wrap {
+        width: min(95vw, 1180px); padding: 26px 20px 30px;
+        display: flex; flex-direction: column; gap: 18px;
+        position: relative; z-index: 1;
+      }
+      .game-header { text-align: center; position: relative; }
+      .game-header::before {
+        content: "❖"; display: block; font-size: 15px; color: var(--amethyst-bright);
+        opacity: 0.7; margin-bottom: 6px; text-shadow: 0 0 14px rgba(157,123,234,0.8);
+      }
+      .game-header::after {
+        content: "⟡   ☾   ✦   ☉   ✦   ☽   ⟡";
+        display: block; font-size: 12px; letter-spacing: 0.4em; text-indent: 0.4em;
+        color: var(--gold); margin-top: 12px; opacity: 0.6;
+      }
+      h1 {
+        margin: 0; font-family: 'Cinzel Decorative', serif; font-weight: 900;
+        letter-spacing: 0.14em; text-transform: uppercase; text-indent: 0.14em;
+        font-size: clamp(1.8rem, 5vw, 3.2rem);
+        background: linear-gradient(100deg, #fff7e6 0%, var(--gold-bright) 28%, var(--amethyst-bright) 50%, var(--gold) 72%, #fff7e6 100%);
+        background-size: 240% auto;
+        -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+        filter: drop-shadow(0 0 18px rgba(157,123,234,0.35)) drop-shadow(0 2px 6px rgba(0,0,0,0.8));
+        animation: shimmer 10s ease-in-out infinite;
+      }
+      @keyframes shimmer { 0%,100% { background-position: 0% center; } 50% { background-position: 150% center; } }
+      .subtitle {
+        margin: 11px 0 0; font-family: 'Montserrat', sans-serif; font-weight: 300;
+        font-size: 0.72rem; letter-spacing: 0.36em; text-transform: uppercase; text-indent: 0.36em;
+        color: #b9a6d8;
+      }
+      .canvas-container {
+        position: relative; width: 100%; border-radius: 16px; padding: 7px;
+        background: linear-gradient(135deg, rgba(196,168,255,0.5), rgba(227,193,120,0.15) 28%, rgba(40,28,64,0.7) 64%, rgba(196,168,255,0.4));
+        box-shadow: 0 36px 90px rgba(0,0,0,0.85), 0 0 60px rgba(157,123,234,0.18), inset 0 2px 0 rgba(255,255,255,0.05);
+      }
+      .canvas-inner { position: relative; border-radius: 10px; overflow: hidden; background: #07040f; }
+      .canvas-container::before, .canvas-container::after {
+        content: "✦"; position: absolute; color: var(--gold); font-size: 14px; opacity: 0.8; z-index: 2;
+        text-shadow: 0 0 10px rgba(227,193,120,0.7);
+      }
+      .canvas-container::before { top: 13px; left: 16px; }
+      .canvas-container::after { bottom: 13px; right: 16px; }
+      #game-canvas { display: block; width: 100%; height: auto; background: #07040f; cursor: pointer; }
+      .controls-legend {
+        display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 10px 22px;
+        padding: 14px 22px;
+        background: linear-gradient(180deg, rgba(34,24,54,0.7), rgba(18,12,32,0.7));
+        border: 1px solid rgba(157,123,234,0.22); border-radius: 12px;
+        font-family: 'Montserrat', sans-serif; font-size: 0.74rem; color: #c3b4dd; letter-spacing: 0.04em;
+        box-shadow: 0 12px 34px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.04);
+      }
+      .controls-legend span { display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
+      .legend-divider { width: 1px; height: 18px; background: rgba(157,123,234,0.28); }
+      .key-cap {
+        background: linear-gradient(180deg, #3a2c5c, #241834);
+        border: 1px solid rgba(196,168,255,0.4); border-bottom: 2px solid rgba(196,168,255,0.6);
+        border-radius: 6px; padding: 3px 9px; min-width: 24px; text-align: center;
+        font-family: 'Montserrat', monospace; font-weight: 600; font-size: 0.68rem;
+        color: var(--gold-bright); box-shadow: 0 1px 3px rgba(0,0,0,0.55), 0 0 10px rgba(157,123,234,0.25);
+      }
+      @media (prefers-reduced-motion: reduce) { h1 { animation: none; } }
+    </style>
   </head>
   <body>
     <main class="wrap">
       <header class="game-header">
         <h1>Tarot Wizard</h1>
-        <p class="subtitle">Arcane Mechanics // High-Fashion Edition</p>
+        <p class="subtitle">A Game of Cosmic Alignment &amp; Mental Fortitude</p>
       </header>
       <div class="canvas-container">
-        <canvas id="game-canvas" width="1280" height="720" aria-label="Tarot Wizard board"></canvas>
+        <div class="canvas-inner">
+          <canvas id="game-canvas" width="1120" height="630" aria-label="Tarot Wizard board"></canvas>
+        </div>
+      </div>
+      <div class="controls-legend">
+        <span><span class="key-cap">SPACE</span> Draw a card</span>
+        <span class="legend-divider"></span>
+        <span><span class="key-cap">U</span> Upright &mdash; stable</span>
+        <span class="legend-divider"></span>
+        <span><span class="key-cap">R</span> Reversed &mdash; volatile</span>
+        <span class="legend-divider"></span>
+        <span><span class="key-cap">F</span> Fullscreen</span>
       </div>
     </main>
-    <script src="game.js"></script>
+
+    <script>
+      const canvas = document.getElementById("game-canvas");
+      const ctx = canvas.getContext("2d");
+      const W = canvas.width, H = canvas.height;
+      const REDUCED_MOTION = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+      /* ====================== PALETTE (real colors; canvas ignores CSS vars) ====================== */
+      const C = {
+        ink: "#07040f",
+        gold: "#e3c178", goldBright: "#f8e2ac", goldDim: "rgba(227,193,120,0.28)",
+        amethyst: "#9d7bea", amethystBright: "#c4a8ff", amethystDim: "rgba(157,123,234,0.3)",
+        teal: "#67dad8", rose: "#d77fb3",
+        parchment: "#f3e9d6", mutedGold: "#cbb488", white: "#ffffff",
+        sanity: "#67c7ee", destiny: "#f0a830", momentum: "#46e08a", error: "#e8645d", turns: "#ece3d3"
+      };
+
+      const BOARD_START_X = 100, BOARD_END_X = 740, TRACK_Y = 410;
+      const MAX_TURNS = 18, DESTINY_TARGET = 100, START_SANITY = 60;
+
+      const majorDeck = [
+        "The Fool","The Magician","The High Priestess","The Empress","The Emperor",
+        "The Hierophant","The Lovers","The Chariot","Strength","The Hermit",
+        "Wheel of Fortune","Justice","The Hanged Man","Death","Temperance",
+        "The Devil","The Tower","The Star","The Moon","The Sun","Judgement","The World"
+      ];
+      const minorSuits = ["coins","swords","cups","wands"];
+      const SUIT_COLOR = { coins:"#f0cd72", swords:"#aecbe8", cups:"#7fd0ee", wands:"#ef9a55" };
+      const ORIENTATION_LABEL = { upright:"Upright", reversed:"Reversed" };
+
+      const MINOR_EFFECTS = {
+        coins:  { upright:{destiny:6,sanity:0,momentum:0},  reversed:{destiny:12,sanity:-3,momentum:0} },
+        swords: { upright:{destiny:4,sanity:-6,momentum:0}, reversed:{destiny:10,sanity:-12,momentum:0} },
+        cups:   { upright:{destiny:2,sanity:8,momentum:0},  reversed:{destiny:6,sanity:12,momentum:0} },
+        wands:  { upright:{destiny:5,sanity:-1,momentum:2}, reversed:{destiny:9,sanity:-3,momentum:4} }
+      };
+      const MAJOR_EFFECTS = {
+        "The Fool":{upright:{destiny:7,sanity:2,momentum:1},reversed:{destiny:11,sanity:-3,momentum:2}},
+        "The Magician":{upright:{destiny:9,sanity:0,momentum:2},reversed:{destiny:13,sanity:-4,momentum:3}},
+        "The High Priestess":{upright:{destiny:6,sanity:5,momentum:1},reversed:{destiny:10,sanity:1,momentum:2}},
+        "The Empress":{upright:{destiny:8,sanity:6,momentum:1},reversed:{destiny:12,sanity:2,momentum:2}},
+        "The Emperor":{upright:{destiny:10,sanity:-1,momentum:1},reversed:{destiny:14,sanity:-5,momentum:2}},
+        "The Hierophant":{upright:{destiny:7,sanity:4,momentum:1},reversed:{destiny:11,sanity:-2,momentum:2}},
+        "The Lovers":{upright:{destiny:9,sanity:3,momentum:1},reversed:{destiny:13,sanity:-4,momentum:2}},
+        "The Chariot":{upright:{destiny:11,sanity:-2,momentum:2},reversed:{destiny:15,sanity:-6,momentum:3}},
+        Strength:{upright:{destiny:8,sanity:4,momentum:2},reversed:{destiny:12,sanity:-3,momentum:3}},
+        "The Hermit":{upright:{destiny:6,sanity:6,momentum:0},reversed:{destiny:10,sanity:-1,momentum:1}},
+        Justice:{upright:{destiny:9,sanity:0,momentum:1},reversed:{destiny:13,sanity:-5,momentum:2}},
+        "The Hanged Man":{upright:{destiny:5,sanity:7,momentum:0},reversed:{destiny:9,sanity:-2,momentum:1}},
+        Death:{upright:{destiny:10,sanity:-3,momentum:1},reversed:{destiny:15,sanity:-8,momentum:2}},
+        Temperance:{upright:{destiny:7,sanity:6,momentum:1},reversed:{destiny:11,sanity:-1,momentum:2}},
+        "The Devil":{upright:{destiny:12,sanity:-7,momentum:2},reversed:{destiny:18,sanity:-12,momentum:3}},
+        "The Tower":{upright:{destiny:8,sanity:-10,momentum:0},reversed:{destiny:18,sanity:-18,momentum:0}},
+        "The Star":{upright:{destiny:4,sanity:10,momentum:0},reversed:{destiny:8,sanity:16,momentum:0}},
+        "The Moon":{upright:{destiny:7,sanity:-4,momentum:1},reversed:{destiny:12,sanity:-9,momentum:2}},
+        "The Sun":{upright:{destiny:11,sanity:5,momentum:1},reversed:{destiny:16,sanity:-1,momentum:2}},
+        Judgement:{upright:{destiny:10,sanity:2,momentum:1},reversed:{destiny:14,sanity:-4,momentum:2}},
+        "The World":{upright:{destiny:12,sanity:4,momentum:2},reversed:{destiny:17,sanity:-2,momentum:3}}
+      };
+
+      const state = {
+        mode:"menu", turnsLeft:MAX_TURNS, destiny:0, sanity:START_SANITY, momentum:0,
+        phase:"await_draw", currentCard:null, cardIndex:0, eventText:"", finalReading:"",
+        messageTimer:0, seekerX:BOARD_START_X, floatingTexts:[], uiAnimTime:0,
+        cardRevealAt:-10, prevSeekerX:BOARD_START_X, seekerVel:0, overlayAt:0
+      };
+      let lastTs = performance.now();
+
+      const hitboxes = {
+        upright:  { x:800, y:460, w:270, h:54 },
+        reversed: { x:800, y:530, w:270, h:54 }
+      };
+      let mousePos = { x:0, y:0 };
+
+      /* ====================== Starfield + constellation + magic motes ====================== */
+      const STARS = [];
+      (function () {
+        for (let i=0;i<140;i++){
+          STARS.push({ x:Math.random()*W, y:Math.random()*H, r:Math.random()*1.4+0.3,
+            base:Math.random()*0.5+0.2, spd:Math.random()*2+0.6, ph:Math.random()*Math.PI*2 });
+        }
+      })();
+      const LINES = [];
+      (function () {
+        for (let i=0;i<STARS.length;i++){
+          for (let j=i+1;j<STARS.length;j++){
+            const dx=STARS[i].x-STARS[j].x, dy=STARS[i].y-STARS[j].y;
+            const d=Math.hypot(dx,dy);
+            if (d<78 && Math.random()<0.18) LINES.push([i,j,d]);
+          }
+        }
+      })();
+      const MOTES = [];
+      (function () {
+        const cols = [C.amethyst, C.gold, C.teal, C.amethystBright];
+        for (let i=0;i<46;i++){
+          MOTES.push({ x:Math.random()*W, y:Math.random()*H, r:Math.random()*2+0.8,
+            spd:Math.random()*16+6, sway:Math.random()*22+8, ph:Math.random()*Math.PI*2,
+            col:cols[i%cols.length], a:Math.random()*0.4+0.2 });
+        }
+      })();
+
+      /* ====================== Input ====================== */
+      canvas.addEventListener("mousemove",(e)=>{
+        const r=canvas.getBoundingClientRect();
+        mousePos.x=((e.clientX-r.left)/r.width)*canvas.width;
+        mousePos.y=((e.clientY-r.top)/r.height)*canvas.height;
+      });
+      canvas.addEventListener("click",()=>{
+        if (state.mode==="playing"){
+          if (state.phase==="await_choice"){
+            if (isInside(mousePos,hitboxes.upright)) resolveChoice("upright");
+            else if (isInside(mousePos,hitboxes.reversed)) resolveChoice("reversed");
+          } else if (state.phase==="await_draw") drawCard();
+        } else if (state.mode==="menu") startRun();
+        else if (state.mode==="win"||state.mode==="lose") resetToMenu();
+      });
+      function isInside(p,r){ return p.x>=r.x&&p.x<=r.x+r.w&&p.y>=r.y&&p.y<=r.y+r.h; }
+      window.addEventListener("keydown",(e)=>{
+        const key=e.key.toLowerCase(); const isSpace=e.code==="Space"||e.key===" ";
+        if (key==="f") toggleFullscreen();
+        if (state.mode==="menu"&&key==="enter"){ startRun(); return; }
+        if (state.mode==="playing"){
+          if (state.phase==="await_draw"&&isSpace){ e.preventDefault(); drawCard(); return; }
+          if (state.phase==="await_choice"&&(key==="u"||key==="r")){ resolveChoice(key==="u"?"upright":"reversed"); return; }
+        }
+        if ((state.mode==="win"||state.mode==="lose")&&key==="enter") resetToMenu();
+      });
+      function toggleFullscreen(){ if(!document.fullscreenElement) canvas.requestFullscreen?.(); else document.exitFullscreen?.(); }
+      function randomInt(min,max){ return Math.floor(Math.random()*(max-min+1))+min; }
+      function addFloat(text,color){ state.floatingTexts.push({ text, color:color||C.gold, x:state.seekerX, y:TRACK_Y-44, ttl:1.7, life:1.7 }); }
+
+      /* ====================== Game flow (logic unchanged) ====================== */
+      function startRun(){
+        state.mode="playing"; state.turnsLeft=MAX_TURNS; state.destiny=0; state.sanity=START_SANITY;
+        state.momentum=0; state.phase="await_draw"; state.currentCard=null; state.cardIndex=0;
+        state.eventText="Focus your intent. Press SPACE or click anywhere on the table to draw your first card.";
+        state.finalReading=""; state.messageTimer=5; state.seekerX=BOARD_START_X; state.prevSeekerX=BOARD_START_X; state.floatingTexts=[];
+      }
+      function resetToMenu(){ state.mode="menu"; state.eventText=""; state.finalReading=""; state.currentCard=null; state.phase="await_draw"; state.overlayAt=state.uiAnimTime; }
+      function drawCard(){
+        const isMajor=Math.random()<0.35;
+        if (isMajor) state.currentCard={ type:"major", name:majorDeck[randomInt(0,majorDeck.length-1)] };
+        else state.currentCard={ type:"minor", suit:minorSuits[randomInt(0,minorSuits.length-1)], rank:randomInt(1,14) };
+        state.phase="await_choice"; state.cardRevealAt=state.uiAnimTime;
+        state.eventText="Alignment decision needed. Choose Upright for calculated structure, or Reversed for volatile risk.";
+        state.messageTimer=5;
+      }
+      function resolveChoice(orientation){
+        if (!state.currentCard) return;
+        let outcome={destiny:0,sanity:0,momentum:0,text:""};
+        if (state.currentCard.type==="major") outcome=applyMajorArcana(state.currentCard.name,orientation);
+        else outcome=applyMinorArcana(state.currentCard.suit,state.currentCard.rank,orientation);
+        state.destiny+=outcome.destiny; state.sanity+=outcome.sanity; state.momentum+=outcome.momentum;
+        state.sanity=Math.max(0,Math.min(100,state.sanity)); state.momentum=Math.max(0,Math.min(20,state.momentum));
+        state.turnsLeft-=1; state.cardIndex+=1; state.eventText=outcome.text; state.messageTimer=5;
+        if (outcome.destiny!==0) addFloat(`${outcome.destiny>0?"+":""}${outcome.destiny} Destiny`,"#8ff0b6");
+        if (outcome.sanity!==0) addFloat(`${outcome.sanity>0?"+":""}${outcome.sanity} Sanity`, outcome.sanity>0?C.sanity:"#f08079");
+        checkEndConditions();
+        if (state.mode==="playing"){ state.phase="await_draw"; state.currentCard=null; }
+      }
+      function applyMinorArcana(suit,rank,orientation){
+        const e=MINOR_EFFECTS[suit][orientation]; const s=suit[0].toUpperCase()+suit.slice(1);
+        return { destiny:e.destiny, sanity:e.sanity, momentum:e.momentum,
+          text:`${s} ${ORIENTATION_LABEL[orientation]}: Destiny shifts by ${formatDelta(e.destiny,"")}, Sanity by ${formatDelta(e.sanity,"")}.` };
+      }
+      function applyMajorArcana(name,orientation){
+        if (name==="Wheel of Fortune"){
+          const destiny=orientation==="upright"?randomInt(-10,14):randomInt(-16,20);
+          const sanity=orientation==="upright"?randomInt(-6,6):randomInt(-10,8);
+          return { destiny, sanity, momentum:0,
+            text:`The Wheel turns ${ORIENTATION_LABEL[orientation]}: Destiny is rewritten (${formatDelta(destiny,"")}), Sanity flickers (${formatDelta(sanity,"")}).` };
+        }
+        const e=MAJOR_EFFECTS[name][orientation];
+        return { destiny:e.destiny, sanity:e.sanity, momentum:e.momentum,
+          text:`${name} [${ORIENTATION_LABEL[orientation]}]: Strategic realignment complete. Destiny ${formatDelta(e.destiny,"")}, Sanity ${formatDelta(e.sanity,"")}.` };
+      }
+      function formatDelta(v,l){ return `${v>=0?"+":""}${v}${l?" "+l:""}`; }
+      function buildEndingReading(){
+        if (state.mode==="win"){
+          if (state.sanity>=45) return "READING // THE SUN GLOWS BRIGHT. You completed your alignment with immaculate balance and clarity. Your future points towards steady expansion, self-realization, and solid achievements.";
+          if (state.sanity>=20) return "READING // THE SCALE BALANCES. Destiny is achieved, but at the cost of substantial mental strain. You require isolation and restoration before embarking on your next magical pursuit.";
+          return "READING // THE WORLD UNFOLDS IN SCARS. You forged a path to victory, but did so on raw instinct and dangerous risks. Recover your spiritual energy; the next trials will not be so forgiving.";
+        }
+        if (state.sanity<=0){
+          if (state.destiny>=70) return "READING // THE COLD TOWER COLLAPSES. Your ambition reached stellar heights, but your mental fortitude broke under pressure. You pushed too hard, too fast.";
+          return "READING // ECLIPSED BY THE MOON. Intrusive fears and mental static overwhelmed your vision. Take a breath, clear the altar, and ground your spirit before trying again.";
+        }
+        if (state.destiny>=90) return "READING // THE CHARIOT STALLS. You were mere steps from fulfilling your cosmic destiny before your energy dispersed. A single well-placed risk would have carried you through.";
+        return "READING // THE HERMIT'S SILENT ADVICE. Your movement lacked decisive action and cosmic focus. Analyze the properties of the Arcana and plan your future choices with greater deliberation.";
+      }
+      function checkEndConditions(){
+        if (state.sanity<=0){ state.mode="lose"; state.finalReading=buildEndingReading(); state.eventText="Your mental reserves have collapsed. Press ENTER or click to restart."; state.overlayAt=state.uiAnimTime; return; }
+        if (state.destiny>=DESTINY_TARGET){ state.mode="win"; state.finalReading=buildEndingReading(); state.eventText="Destiny integrated successfully. Press ENTER or click to claim another path."; state.overlayAt=state.uiAnimTime; return; }
+        if (state.turnsLeft<=0){ state.mode="lose"; state.finalReading=buildEndingReading(); state.eventText="The astral window has closed. Press ENTER or click to restart."; state.overlayAt=state.uiAnimTime; }
+      }
+      function update(dt){
+        state.uiAnimTime+=dt;
+        if (state.messageTimer>0) state.messageTimer-=dt;
+        if (!REDUCED_MOTION){
+          for (const m of MOTES){
+            m.y-=m.spd*dt; m.ph+=dt;
+            if (m.y<-6){ m.y=H+6; m.x=Math.random()*W; }
+          }
+        }
+        if (state.mode==="playing"){
+          const trackProgress=Math.min(1,state.destiny/DESTINY_TARGET);
+          const targetX=BOARD_START_X+(BOARD_END_X-BOARD_START_X)*trackProgress;
+          const lerp=1-Math.pow(0.001,dt);
+          state.prevSeekerX=state.seekerX; state.seekerX+=(targetX-state.seekerX)*lerp;
+          state.seekerVel=(state.seekerX-state.prevSeekerX)/Math.max(dt,0.0001);
+          for (const f of state.floatingTexts){ f.y-=42*dt; f.ttl-=dt; }
+          state.floatingTexts=state.floatingTexts.filter(f=>f.ttl>0);
+        }
+      }
+
+      /* ====================== Draw helpers ====================== */
+      function rr(x,y,w,h,r){
+        const rad=Math.min(r,w/2,h/2);
+        ctx.beginPath();
+        ctx.moveTo(x+rad,y);
+        ctx.arcTo(x+w,y,x+w,y+h,rad);
+        ctx.arcTo(x+w,y+h,x,y+h,rad);
+        ctx.arcTo(x,y+h,x,y,rad);
+        ctx.arcTo(x,y,x+w,y,rad);
+        ctx.closePath();
+      }
+      function easeOutQuart(t){ return 1-Math.pow(1-Math.max(0,Math.min(1,t)),4); }
+      function pulse(speed,lo,hi){ if(REDUCED_MOTION) return (lo+hi)/2; const t=(Math.sin(state.uiAnimTime*speed)+1)/2; return lo+(hi-lo)*t; }
+      function softGlow(cx,cy,r,color){
+        const g=ctx.createRadialGradient(cx,cy,0,cx,cy,r);
+        g.addColorStop(0,color); g.addColorStop(1,"rgba(0,0,0,0)");
+        ctx.fillStyle=g; ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.fill();
+      }
+      function withGlow(color,blur,fn){ ctx.save(); ctx.shadowBlur=blur; ctx.shadowColor=color; fn(); ctx.restore(); }
+
+      // Deterministic angular rune glyph
+      function drawRune(cx,cy,size,seed,color){
+        ctx.save();
+        ctx.strokeStyle=color; ctx.lineWidth=1.4; ctx.lineCap="round";
+        const pts=[[0,-1],[0,1],[-0.6,-0.6],[0.6,-0.6],[-0.6,0.6],[0.6,0.6],[-0.6,0],[0.6,0]];
+        const r=(seed*9301+49297)%233280/233280;
+        ctx.beginPath();
+        ctx.moveTo(cx,cy-size); ctx.lineTo(cx,cy+size);
+        const a=Math.floor(r*4);
+        if (a===0){ ctx.moveTo(cx,cy-size*0.4); ctx.lineTo(cx+size*0.7,cy-size*0.8); }
+        else if (a===1){ ctx.moveTo(cx,cy); ctx.lineTo(cx+size*0.7,cy-size*0.5); ctx.moveTo(cx,cy); ctx.lineTo(cx+size*0.7,cy+size*0.5); }
+        else if (a===2){ ctx.moveTo(cx-size*0.6,cy-size*0.6); ctx.lineTo(cx,cy); ctx.lineTo(cx+size*0.6,cy-size*0.6); }
+        else { ctx.moveTo(cx-size*0.6,cy-size*0.3); ctx.lineTo(cx+size*0.6,cy-size*0.3); ctx.moveTo(cx-size*0.6,cy+size*0.3); ctx.lineTo(cx+size*0.6,cy+size*0.3); }
+        ctx.stroke();
+        ctx.restore();
+      }
+      function drawRuneRing(cx,cy,radius,count,rot,color,sz){
+        ctx.save(); ctx.translate(cx,cy); ctx.rotate(rot);
+        for (let i=0;i<count;i++){
+          const a=(i/count)*Math.PI*2;
+          ctx.save(); ctx.rotate(a); ctx.translate(0,-radius); ctx.rotate(Math.PI);
+          drawRune(0,0,sz||5,i+1,color);
+          ctx.restore();
+        }
+        ctx.restore();
+      }
+      // small corner filigree flourish, dir = {sx, sy}
+      function filigree(x,y,sx,sy,color){
+        ctx.save(); ctx.strokeStyle=color; ctx.lineWidth=1.2; ctx.lineCap="round";
+        ctx.beginPath();
+        ctx.moveTo(x,y);
+        ctx.quadraticCurveTo(x+18*sx,y, x+18*sx,y+14*sy);
+        ctx.moveTo(x,y);
+        ctx.quadraticCurveTo(x,y+18*sy, x+14*sx,y+18*sy);
+        ctx.stroke();
+        ctx.fillStyle=color; ctx.beginPath(); ctx.arc(x+18*sx,y+18*sy,1.6,0,Math.PI*2); ctx.fill();
+        ctx.restore();
+      }
+      function panel(x,y,w,h,opts){
+        opts=opts||{};
+        const g=ctx.createLinearGradient(0,y,0,y+h);
+        g.addColorStop(0,opts.top||"rgba(38,27,60,0.9)");
+        g.addColorStop(1,opts.bottom||"rgba(18,12,30,0.95)");
+        rr(x,y,w,h,opts.r||12); ctx.fillStyle=g; ctx.fill();
+        rr(x,y,w,h,opts.r||12); ctx.strokeStyle=opts.border||"rgba(157,123,234,0.3)"; ctx.lineWidth=1; ctx.stroke();
+        ctx.save(); rr(x+1,y+1,w-2,h-2,(opts.r||12)-1); ctx.clip();
+        const sh=ctx.createLinearGradient(0,y,0,y+26);
+        sh.addColorStop(0,"rgba(255,255,255,0.06)"); sh.addColorStop(1,"rgba(255,255,255,0)");
+        ctx.fillStyle=sh; ctx.fillRect(x,y,w,26); ctx.restore();
+      }
+
+      function render(){ drawBackground(); drawSpellCircle(); drawPath(); drawUi(); }
+
+      /* ====================== Background ====================== */
+      function drawBackground(){
+        const g=ctx.createRadialGradient(W*0.5,H*0.3,50,W*0.5,H*0.5,W*0.72);
+        g.addColorStop(0,"#241640"); g.addColorStop(0.5,"#140d2b"); g.addColorStop(1,"#070411");
+        ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+
+        softGlow(W*0.26,H*0.28,300,"rgba(157,123,234,0.14)");
+        softGlow(W*0.78,H*0.66,320,"rgba(103,218,216,0.09)");
+        softGlow(W*0.5,TRACK_Y,340,"rgba(227,193,120,0.06)");
+
+        // constellation lines
+        ctx.lineWidth=1;
+        for (const [i,j] of LINES){
+          const s1=STARS[i], s2=STARS[j];
+          ctx.strokeStyle="rgba(157,123,234,0.05)";
+          ctx.beginPath(); ctx.moveTo(s1.x,s1.y); ctx.lineTo(s2.x,s2.y); ctx.stroke();
+        }
+        // stars
+        for (const s of STARS){
+          const tw=REDUCED_MOTION?s.base:s.base+0.45*(Math.sin(state.uiAnimTime*s.spd+s.ph)*0.5+0.5);
+          ctx.globalAlpha=Math.min(1,tw); ctx.fillStyle="#fbf3e6";
+          ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,Math.PI*2); ctx.fill();
+        }
+        ctx.globalAlpha=1;
+        // magic motes
+        for (const m of MOTES){
+          const sway=REDUCED_MOTION?0:Math.sin(m.ph)*m.sway*0.3;
+          ctx.globalAlpha=m.a*pulse(2+ (m.r), 0.5, 1);
+          withGlow(m.col,8,()=>{ ctx.fillStyle=m.col; ctx.beginPath(); ctx.arc(m.x+sway,m.y,m.r,0,Math.PI*2); ctx.fill(); });
+        }
+        ctx.globalAlpha=1;
+      }
+
+      /* ====================== Great spell circle behind the path ====================== */
+      function drawSpellCircle(){
+        const cx=(BOARD_START_X+BOARD_END_X)/2, cy=TRACK_Y, R=300;
+        ctx.save();
+        // faint fill
+        softGlow(cx,cy,R*0.95,"rgba(157,123,234,0.04)");
+        // outer & inner rings
+        ctx.strokeStyle="rgba(227,193,120,0.10)"; ctx.lineWidth=1;
+        ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2); ctx.stroke();
+        ctx.strokeStyle="rgba(157,123,234,0.10)";
+        ctx.beginPath(); ctx.arc(cx,cy,R-14,0,Math.PI*2); ctx.stroke();
+        ctx.beginPath(); ctx.arc(cx,cy,R*0.62,0,Math.PI*2); ctx.stroke();
+        // rune rings rotating opposite directions
+        const rot=REDUCED_MOTION?0:state.uiAnimTime*0.05;
+        ctx.globalAlpha=0.5; drawRuneRing(cx,cy,R-7,18,rot,"rgba(227,193,120,0.45)",6);
+        ctx.globalAlpha=0.4; drawRuneRing(cx,cy,R*0.62,12,-rot*1.6,"rgba(196,168,255,0.5)",5);
+        ctx.globalAlpha=1;
+        // inscribed triangle / hexagram on inner ring
+        ctx.strokeStyle="rgba(196,168,255,0.10)"; ctx.lineWidth=1;
+        for (let t=0;t<2;t++){
+          ctx.beginPath();
+          for (let k=0;k<3;k++){
+            const a=t*Math.PI+ (k/3)*Math.PI*2 - Math.PI/2;
+            const px=cx+Math.cos(a)*R*0.62, py=cy+Math.sin(a)*R*0.62;
+            if (k===0) ctx.moveTo(px,py); else ctx.lineTo(px,py);
+          }
+          ctx.closePath(); ctx.stroke();
+        }
+        ctx.restore();
+      }
+
+      /* ====================== The Ley-line Destiny Path ====================== */
+      function drawPath(){
+        ctx.strokeStyle="rgba(227,193,120,0.18)"; ctx.lineWidth=2; ctx.lineCap="round";
+        ctx.beginPath(); ctx.moveTo(BOARD_START_X,TRACK_Y); ctx.lineTo(BOARD_END_X,TRACK_Y); ctx.stroke();
+
+        const filled=Math.max(0,state.seekerX-BOARD_START_X);
+        if (filled>0){
+          withGlow("rgba(196,168,255,0.7)",14,()=>{
+            const pg=ctx.createLinearGradient(BOARD_START_X,0,state.seekerX,0);
+            pg.addColorStop(0,"rgba(157,123,234,0.2)"); pg.addColorStop(0.6,"rgba(227,193,120,0.6)"); pg.addColorStop(1,"rgba(248,226,172,0.95)");
+            ctx.strokeStyle=pg; ctx.lineWidth=4;
+            ctx.beginPath(); ctx.moveTo(BOARD_START_X,TRACK_Y); ctx.lineTo(state.seekerX,TRACK_Y); ctx.stroke();
+          });
+        }
+
+        for (let i=0;i<=10;i++){
+          const x=BOARD_START_X+((BOARD_END_X-BOARD_START_X)/10)*i;
+          const reached=state.seekerX>=x-2; const goal=i===10;
+          if (goal){
+            withGlow(C.gold, pulse(2.2,10,20), ()=>drawStar(x,TRACK_Y,10,4,5,C.goldBright));
+          } else {
+            ctx.fillStyle=reached?C.goldBright:"rgba(227,193,120,0.4)";
+            ctx.beginPath(); ctx.arc(x,TRACK_Y,reached?4:3,0,Math.PI*2); ctx.fill();
+          }
+          ctx.strokeStyle=goal?"rgba(248,226,172,0.7)":(reached?"rgba(196,168,255,0.4)":"rgba(157,123,234,0.18)");
+          ctx.lineWidth=1; ctx.beginPath(); ctx.arc(x,TRACK_Y,goal?15:7,0,Math.PI*2); ctx.stroke();
+          ctx.fillStyle=reached?"rgba(248,226,172,0.7)":"rgba(190,170,210,0.4)";
+          ctx.font="9px 'Montserrat', sans-serif"; ctx.textAlign="center"; ctx.fillText(`${i*10}`,x,TRACK_Y+27);
+        }
+
+        // comet trail
+        const tl=Math.min(72,Math.abs(state.seekerVel)*0.25);
+        if (tl>4){
+          const tg=ctx.createLinearGradient(state.seekerX-tl,0,state.seekerX,0);
+          tg.addColorStop(0,"rgba(196,168,255,0)"); tg.addColorStop(1,"rgba(248,226,172,0.55)");
+          ctx.strokeStyle=tg; ctx.lineWidth=5; ctx.lineCap="round";
+          ctx.beginPath(); ctx.moveTo(state.seekerX-tl,TRACK_Y); ctx.lineTo(state.seekerX,TRACK_Y); ctx.stroke();
+        }
+
+        // Seeker orb
+        withGlow(C.amethystBright, pulse(2.5,16,28), ()=>{
+          const og=ctx.createRadialGradient(state.seekerX,TRACK_Y,1,state.seekerX,TRACK_Y,9);
+          og.addColorStop(0,"#ffffff"); og.addColorStop(0.5,C.goldBright); og.addColorStop(1,C.amethyst);
+          ctx.fillStyle=og; ctx.beginPath(); ctx.arc(state.seekerX,TRACK_Y,8,0,Math.PI*2); ctx.fill();
+        });
+        // rune ring around seeker
+        ctx.save(); ctx.globalAlpha=0.85;
+        drawRuneRing(state.seekerX,TRACK_Y,18, 6, REDUCED_MOTION?0:state.uiAnimTime*0.6, C.goldBright, 4);
+        ctx.restore();
+        ctx.save(); ctx.translate(state.seekerX,TRACK_Y);
+        if (!REDUCED_MOTION) ctx.rotate(-state.uiAnimTime*0.9);
+        ctx.strokeStyle=C.amethystBright; ctx.lineWidth=1.5; ctx.setLineDash([4,6]);
+        ctx.beginPath(); ctx.arc(0,0,24,0,Math.PI*2); ctx.stroke(); ctx.setLineDash([]); ctx.restore();
+
+        ctx.textAlign="left"; ctx.fillStyle="rgba(190,170,210,0.6)"; ctx.font="10px 'Montserrat', sans-serif";
+        ctx.fillText("INITIATION",BOARD_START_X-10,TRACK_Y-24);
+        ctx.textAlign="right"; ctx.fillStyle=C.goldBright;
+        ctx.fillText("DESTINY REVEALED",BOARD_END_X+14,TRACK_Y-24); ctx.textAlign="left";
+
+        for (const f of state.floatingTexts){
+          const a=Math.max(0,f.ttl/f.life); ctx.globalAlpha=a; ctx.fillStyle=f.color;
+          ctx.font="bold 14px 'Montserrat', sans-serif"; ctx.textAlign="center";
+          withGlow(f.color,8,()=>ctx.fillText(f.text,f.x,f.y));
+        }
+        ctx.globalAlpha=1; ctx.textAlign="left";
+      }
+
+      /* ====================== HUD + panels ====================== */
+      function drawUi(){
+        const hudX=50, hudY=40;
+        panel(hudX,hudY,700,110,{r:13});
+        ctx.fillStyle="rgba(196,168,255,0.5)"; rr(hudX+16,hudY,90,3,1.5); ctx.fill();
+        filigree(hudX+8,hudY+8,1,1,"rgba(227,193,120,0.4)");
+        filigree(hudX+692,hudY+8,-1,1,"rgba(227,193,120,0.4)");
+
+        const sanityWarn=state.mode==="playing"&&state.sanity<=20;
+        const turnsWarn=state.mode==="playing"&&state.turnsLeft<=3;
+        drawStatColumn(hudX+30,hudY+32,"DESTINY",`${state.destiny} / ${DESTINY_TARGET}`,state.destiny/DESTINY_TARGET,C.destiny,false);
+        drawStatColumn(hudX+200,hudY+32,"SANITY",`${state.sanity}%`,state.sanity/100,C.sanity,sanityWarn);
+        drawStatColumn(hudX+370,hudY+32,"MOMENTUM",`${state.momentum}`,state.momentum/20,C.momentum,false);
+        drawStatColumn(hudX+540,hudY+32,"TURNS LEFT",`${state.turnsLeft}`,state.turnsLeft/MAX_TURNS,C.turns,turnsWarn);
+
+        const sp=780;
+        panel(sp,hudY,290,550,{r:15});
+        // ornate header tab
+        ctx.save(); rr(sp,hudY,290,40,15); ctx.clip();
+        ctx.fillStyle="rgba(157,123,234,0.14)"; ctx.fillRect(sp,hudY,290,40); ctx.restore();
+        ctx.strokeStyle="rgba(227,193,120,0.25)"; ctx.lineWidth=1;
+        ctx.beginPath(); ctx.moveTo(sp+10,hudY+40); ctx.lineTo(sp+280,hudY+40); ctx.stroke();
+        withGlow("rgba(196,168,255,0.6)",8,()=>{
+          ctx.fillStyle=C.goldBright; ctx.font="11px 'Cinzel', serif"; ctx.textAlign="center";
+          ctx.fillText("✦  T H E   S C R Y I N G   M I R R O R  ✦",sp+145,hudY+25);
+        });
+        ctx.textAlign="left";
+
+        if (state.currentCard) drawActiveCard(sp,hudY);
+        else drawAwaitingState(sp,hudY);
+
+        const fx=50,fy=515,fw=700,fh=85;
+        panel(fx,fy,fw,fh,{r:13,top:"rgba(22,15,36,0.95)",bottom:"rgba(14,9,24,0.97)"});
+        rr(fx+14,fy+12,150,18,9); ctx.fillStyle="rgba(157,123,234,0.16)"; ctx.fill();
+        ctx.fillStyle=C.goldBright; ctx.font="8px 'Montserrat', sans-serif"; ctx.textAlign="center";
+        ctx.fillText("ORACLE CHRONICLE",fx+89,fy+24); ctx.textAlign="left";
+        ctx.fillStyle=C.parchment; ctx.font="15px 'Cormorant Garamond', serif";
+        const msg=state.mode==="menu"
+          ? "The cosmic loom sits dormant. Click anywhere on the table or press ENTER to begin your alignment."
+          : state.eventText;
+        wrapText(msg,fx+20,fy+50,fw-200,20);
+        if (state.mode==="playing"){
+          ctx.fillStyle="rgba(190,170,210,0.55)"; ctx.font="10px 'Montserrat', sans-serif"; ctx.textAlign="right";
+          ctx.fillText(`CARD ${state.cardIndex+(state.currentCard?1:0)}`,fx+fw-18,fy+28); ctx.textAlign="left";
+        }
+
+        if (state.mode==="playing"&&state.sanity<=20){
+          const a=pulse(3,0.05,0.17);
+          const vg=ctx.createRadialGradient(W/2,H/2,H*0.35,W/2,H/2,H*0.78);
+          vg.addColorStop(0,"rgba(232,100,93,0)"); vg.addColorStop(1,`rgba(232,100,93,${a})`);
+          ctx.fillStyle=vg; ctx.fillRect(0,0,W,H);
+        }
+
+        if (state.mode==="menu"||state.mode==="win"||state.mode==="lose") drawOverlay();
+      }
+
+      function drawStatColumn(x,y,label,value,progress,color,warn){
+        ctx.fillStyle="rgba(190,170,210,0.7)"; ctx.font="9px 'Montserrat', sans-serif"; ctx.fillText(label,x,y);
+        const blink=warn?pulse(4,0.45,1):1; ctx.globalAlpha=blink;
+        ctx.fillStyle=warn?C.error:C.white; ctx.font="bold 17px 'Montserrat', sans-serif"; ctx.fillText(value,x,y+26);
+        ctx.globalAlpha=1;
+        const bw=120,bh=6,by=y+38;
+        rr(x,by,bw,bh,3); ctx.fillStyle="rgba(255,255,255,0.07)"; ctx.fill();
+        const p=Math.max(0,Math.min(1,progress));
+        if (p>0) withGlow(color,8,()=>{ rr(x,by,Math.max(bh,bw*p),bh,3); ctx.fillStyle=color; ctx.fill(); });
+      }
+
+      function drawActiveCard(sp,hudY){
+        const cX=sp+35,cY=hudY+60,cW=220,cH=290;
+        const t=easeOutQuart((state.uiAnimTime-state.cardRevealAt)/0.4);
+        const isMajor=state.currentCard.type==="major";
+        const accent=isMajor?C.goldBright:SUIT_COLOR[state.currentCard.suit];
+
+        // aura behind card
+        ctx.save(); ctx.globalAlpha=t*0.6; softGlow(cX+cW/2,cY+cH/2,150,isMajor?"rgba(196,168,255,0.18)":"rgba(103,218,216,0.14)"); ctx.restore();
+
+        ctx.save();
+        ctx.globalAlpha=t;
+        ctx.translate(cX+cW/2,cY+cH/2); const sc=0.9+0.1*t; ctx.scale(sc,sc); ctx.translate(-(cX+cW/2),-(cY+cH/2));
+
+        withGlow("rgba(0,0,0,0.8)",22,()=>{
+          rr(cX,cY,cW,cH,12);
+          const cg=ctx.createLinearGradient(cX,cY,cX,cY+cH);
+          cg.addColorStop(0,"#241a38"); cg.addColorStop(1,"#130d24");
+          ctx.fillStyle=cg; ctx.fill();
+        });
+        rr(cX,cY,cW,cH,12); ctx.strokeStyle=accent; ctx.lineWidth=1.5; ctx.stroke();
+        rr(cX+8,cY+8,cW-16,cH-16,7); ctx.strokeStyle="rgba(227,193,120,0.3)"; ctx.lineWidth=1; ctx.stroke();
+
+        // rune border on inner frame
+        ctx.globalAlpha=t*0.5;
+        for (let i=0;i<10;i++){
+          const rx=cX+20+i*((cW-40)/9);
+          drawRune(rx,cY+18,4,i+3,"rgba(227,193,120,0.6)");
+          drawRune(rx,cY+cH-18,4,i+11,"rgba(227,193,120,0.6)");
+        }
+        ctx.globalAlpha=t;
+
+        // corner flourishes
+        filigree(cX+14,cY+14,1,1,accent);
+        filigree(cX+cW-14,cY+14,-1,1,accent);
+        filigree(cX+14,cY+cH-14,1,-1,accent);
+        filigree(cX+cW-14,cY+cH-14,-1,-1,accent);
+
+        ctx.fillStyle="rgba(190,170,210,0.7)"; ctx.font="8px 'Montserrat', sans-serif"; ctx.textAlign="center";
+        ctx.fillText(isMajor?"MAJOR ARCANA":"MINOR ARCANA",cX+cW/2,cY+34);
+
+        const rawTitle=isMajor?state.currentCard.name:`${cap(state.currentCard.suit)} ${state.currentCard.rank}`;
+        withGlow("rgba(196,168,255,0.5)",6,()=>{
+          ctx.fillStyle=C.white; ctx.font=`${isMajor&&rawTitle.length>12?13:15}px 'Cinzel', serif`;
+          ctx.fillText(rawTitle.toUpperCase(),cX+cW/2,cY+54);
+        });
+        ctx.textAlign="left";
+
+        drawTarotArt(state.currentCard,cX+26,cY+64,cW-52,148,accent);
+
+        ctx.textAlign="center"; ctx.fillStyle="rgba(227,193,120,0.55)"; ctx.font="9px 'Montserrat', sans-serif";
+        if (isMajor) ctx.fillText("◈   ◈   ◈",cX+cW/2,cY+cH-26);
+        else ctx.fillText(`RANK ${state.currentCard.rank} OF ${state.currentCard.suit.toUpperCase()}`,cX+cW/2,cY+cH-26);
+        ctx.textAlign="left";
+        ctx.restore();
+
+        const up=getCardOutcomePreview(state.currentCard,"upright");
+        const rev=getCardOutcomePreview(state.currentCard,"reversed");
+        drawChoiceButton(hitboxes.upright,"U","UPRIGHT","Calculated",up,isInside(mousePos,hitboxes.upright),C.momentum);
+        drawChoiceButton(hitboxes.reversed,"R","REVERSED","Volatile",rev,isInside(mousePos,hitboxes.reversed),C.error);
+      }
+
+      function drawAwaitingState(sp,hudY){
+        const bx=sp+35,by=hudY+60,bw=220,bh=290;
+        rr(bx,by,bw,bh,12);
+        const bg=ctx.createLinearGradient(bx,by,bx,by+bh);
+        bg.addColorStop(0,"rgba(36,26,56,0.6)"); bg.addColorStop(1,"rgba(19,13,36,0.6)");
+        ctx.fillStyle=bg; ctx.fill();
+        rr(bx,by,bw,bh,12); ctx.strokeStyle="rgba(157,123,234,0.3)"; ctx.lineWidth=1.2; ctx.stroke();
+        rr(bx+8,by+8,bw-16,bh-16,7); ctx.strokeStyle="rgba(227,193,120,0.14)"; ctx.stroke();
+
+        const cx=bx+bw/2, cy=by+bh/2-12;
+        const scale=REDUCED_MOTION?1:1+0.06*Math.sin(state.uiAnimTime*2.4);
+        ctx.save(); ctx.translate(cx,cy); ctx.scale(scale,scale);
+        withGlow("rgba(196,168,255,0.5)",14,()=>{
+          ctx.strokeStyle="rgba(196,168,255,0.45)"; ctx.lineWidth=1;
+          ctx.beginPath(); ctx.arc(0,0,46,0,Math.PI*2); ctx.stroke();
+          ctx.beginPath(); ctx.arc(0,0,34,0,Math.PI*2); ctx.stroke();
+        });
+        ctx.restore();
+        ctx.save(); ctx.globalAlpha=0.6; drawRuneRing(cx,cy,40,8,REDUCED_MOTION?0:state.uiAnimTime*0.3,"rgba(227,193,120,0.6)",5); ctx.restore();
+        withGlow("rgba(196,168,255,0.5)",10,()=>drawStar(cx,cy,22,9,5,"rgba(248,226,172,0.5)"));
+
+        ctx.fillStyle="rgba(227,193,120,0.7)"; ctx.font="11px 'Montserrat', sans-serif"; ctx.textAlign="center";
+        ctx.fillText("AWAITING THE DRAW",cx,by+bh-50);
+        ctx.fillStyle="rgba(190,170,210,0.6)"; ctx.font="italic 13px 'Cormorant Garamond', serif";
+        ctx.fillText("Click anywhere or press Space",cx,by+bh-30);
+        ctx.textAlign="left";
+
+        ctx.globalAlpha=pulse(2,0.3,0.6);
+        rr(hitboxes.upright.x,hitboxes.upright.y+24,270,60,12);
+        ctx.strokeStyle="rgba(157,123,234,0.3)"; ctx.setLineDash([4,5]); ctx.lineWidth=1; ctx.stroke(); ctx.setLineDash([]);
+        ctx.globalAlpha=1;
+        ctx.fillStyle="rgba(190,170,210,0.45)"; ctx.font="10px 'Montserrat', sans-serif"; ctx.textAlign="center";
+        ctx.fillText("ALIGNMENT RUNES APPEAR AFTER DRAW",hitboxes.upright.x+135,hitboxes.upright.y+58);
+        ctx.textAlign="left";
+      }
+
+      function drawChoiceButton(rect,keyLabel,title,sub,previewText,hovered,tone){
+        const r=11, lift=hovered&&!REDUCED_MOTION?1:0, y=rect.y-lift;
+        ctx.save();
+        if (hovered){ ctx.shadowBlur=18; ctx.shadowColor="rgba(196,168,255,0.6)"; }
+        rr(rect.x,y,rect.w,rect.h,r);
+        const grad=ctx.createLinearGradient(rect.x,y,rect.x,y+rect.h);
+        if (hovered){ grad.addColorStop(0,"rgba(157,123,234,0.28)"); grad.addColorStop(1,"rgba(227,193,120,0.1)"); }
+        else { grad.addColorStop(0,"rgba(255,255,255,0.05)"); grad.addColorStop(1,"rgba(255,255,255,0.015)"); }
+        ctx.fillStyle=grad; ctx.fill(); ctx.restore();
+        rr(rect.x,y,rect.w,rect.h,r); ctx.strokeStyle=hovered?C.goldBright:"rgba(157,123,234,0.4)"; ctx.lineWidth=hovered?1.5:1; ctx.stroke();
+
+        // rune-stone key badge
+        rr(rect.x+12,y+13,28,28,7);
+        ctx.fillStyle=hovered?"rgba(248,226,172,0.95)":"rgba(157,123,234,0.22)"; ctx.fill();
+        ctx.fillStyle=hovered?"#221634":C.goldBright; ctx.font="bold 14px 'Montserrat', sans-serif"; ctx.textAlign="center";
+        ctx.fillText(keyLabel,rect.x+26,y+32); ctx.textAlign="left";
+
+        ctx.fillStyle=tone; ctx.beginPath(); ctx.arc(rect.x+54,y+19,3,0,Math.PI*2); ctx.fill();
+        ctx.fillStyle=hovered?C.white:"rgba(255,255,255,0.85)"; ctx.font="bold 11px 'Montserrat', sans-serif"; ctx.fillText(title,rect.x+64,y+22);
+        ctx.fillStyle="rgba(190,170,210,0.6)"; ctx.font="9px 'Montserrat', sans-serif"; ctx.fillText(sub,rect.x+ (64+ctx.measureText(title).width+8),y+22);
+
+        drawPreviewLine(previewText,rect.x+64,y+40);
+      }
+
+      function drawPreviewLine(preview,x,y){
+        const parts=preview.split("//").map(s=>s.trim()); let cx=x; ctx.font="11px 'Montserrat', sans-serif";
+        parts.forEach((part)=>{
+          const [label,val]=part.split(":").map(s=>s.trim());
+          ctx.fillStyle="rgba(190,170,210,0.7)"; ctx.fillText(label,cx,y); cx+=ctx.measureText(label+" ").width;
+          let col=C.mutedGold;
+          if (val){
+            const num=val.replace(/[^\-0-9.]/g,"");
+            if (label.toLowerCase().includes("destiny")) col=C.momentum;
+            else if (label.toLowerCase().includes("sanity")) col=num.startsWith("-")?C.error:C.sanity;
+            if (val.includes("..")) col=C.gold;
+          }
+          ctx.fillStyle=col; ctx.font="bold 11px 'Montserrat', sans-serif"; ctx.fillText(val||"",cx,y);
+          cx+=ctx.measureText((val||"")+"   ").width; ctx.font="11px 'Montserrat', sans-serif";
+        });
+      }
+
+      /* ====================== Overlay (menu / win / lose) ====================== */
+      function drawOverlay(){
+        const intro=easeOutQuart((state.uiAnimTime-state.overlayAt)/0.55);
+        ctx.fillStyle=`rgba(5,3,12,${0.88*intro})`; ctx.fillRect(0,0,W,H);
+        const ow=700,oh=370, ox=(W-ow)/2, oy=(H-oh)/2;
+        const isWin=state.mode==="win", isLose=state.mode==="lose";
+        const tone=isWin?C.momentum:isLose?C.error:C.gold;
+
+        ctx.save(); ctx.globalAlpha=intro;
+
+        // grand rotating summoning circle behind modal
+        const ccx=W/2, ccy=H/2;
+        softGlow(ccx,ccy,380,isWin?"rgba(70,224,138,0.10)":isLose?"rgba(232,100,93,0.10)":"rgba(157,123,234,0.10)");
+        ctx.save(); ctx.globalAlpha=intro*0.5;
+        ctx.strokeStyle="rgba(227,193,120,0.18)"; ctx.lineWidth=1;
+        ctx.beginPath(); ctx.arc(ccx,ccy,300,0,Math.PI*2); ctx.stroke();
+        drawRuneRing(ccx,ccy,288,24,REDUCED_MOTION?0:state.uiAnimTime*0.06,"rgba(227,193,120,0.4)",6);
+        drawRuneRing(ccx,ccy,250,18,REDUCED_MOTION?0:-state.uiAnimTime*0.09,"rgba(196,168,255,0.5)",5);
+        ctx.restore();
+
+        withGlow("rgba(0,0,0,0.85)",40,()=>{
+          rr(ox,oy,ow,oh,18);
+          const mg=ctx.createLinearGradient(0,oy,0,oy+oh);
+          mg.addColorStop(0,"#241a38"); mg.addColorStop(1,"#130d24");
+          ctx.fillStyle=mg; ctx.fill();
+        });
+        rr(ox,oy,ow,oh,18); ctx.strokeStyle=tone; ctx.lineWidth=1.5; ctx.stroke();
+        rr(ox+9,oy+9,ow-18,oh-18,12); ctx.strokeStyle="rgba(227,193,120,0.22)"; ctx.lineWidth=1; ctx.stroke();
+
+        filigree(ox+16,oy+16,1,1,tone); filigree(ox+ow-16,oy+16,-1,1,tone);
+        filigree(ox+16,oy+oh-16,1,-1,tone); filigree(ox+ow-16,oy+oh-16,-1,-1,tone);
+
+        ctx.textAlign="center";
+        if (state.mode==="menu"){
+          withGlow("rgba(196,168,255,0.6)",20,()=>{
+            ctx.fillStyle=C.goldBright; ctx.font="30px 'Cinzel Decorative', serif";
+            ctx.fillText("TAROT WIZARD",W/2,oy+82);
+          });
+          ctx.strokeStyle="rgba(227,193,120,0.4)"; ctx.lineWidth=1;
+          ctx.beginPath(); ctx.moveTo(W/2-90,oy+100); ctx.lineTo(W/2+90,oy+100); ctx.stroke();
+          ctx.fillStyle=C.amethystBright; ctx.font="10px 'Cinzel', serif"; ctx.fillText("✦",W/2,oy+104);
+
+          ctx.fillStyle="#e2d4f0"; ctx.font="15px 'Cormorant Garamond', serif";
+          ctx.fillText("Walk the celestial ley-line and reach 100 Destiny to complete your alignment.",W/2,oy+144);
+          ctx.fillText("Guard your Sanity and spend your 18 turns wisely, or the reading fractures.",W/2,oy+168);
+
+          drawMiniStat(W/2-205,oy+208,C.destiny,"DESTINY","reach 100");
+          drawMiniStat(W/2-45,oy+208,C.sanity,"SANITY","keep above 0");
+          drawMiniStat(W/2+115,oy+208,C.momentum,"MOMENTUM","builds power");
+          drawCta(W/2,oy+292,"CLICK OR PRESS ENTER TO BEGIN",C.gold);
+        } else {
+          withGlow(isWin?"rgba(70,224,138,0.6)":"rgba(232,100,93,0.6)",16,()=>{
+            ctx.fillStyle=tone; ctx.font="26px 'Cinzel Decorative', serif";
+            ctx.fillText(isWin?"ALIGNMENT COMPLETED":"SEQUENCE FRACTURED",W/2,oy+70);
+          });
+          ctx.strokeStyle="rgba(227,193,120,0.3)"; ctx.lineWidth=1;
+          ctx.beginPath(); ctx.moveTo(W/2-110,oy+88); ctx.lineTo(W/2+110,oy+88); ctx.stroke();
+          ctx.fillStyle="rgba(190,170,210,0.85)"; ctx.font="11px 'Montserrat', sans-serif";
+          ctx.fillText(`DESTINY ${state.destiny}/100      SANITY ${state.sanity}%      TURNS USED ${MAX_TURNS-state.turnsLeft}`,W/2,oy+112);
+          ctx.fillStyle=C.parchment; ctx.font="16px 'Cormorant Garamond', serif";
+          wrapText(state.finalReading||"",W/2-275,oy+150,550,24,true);
+          drawCta(W/2,oy+oh-50,"CLICK OR PRESS ENTER TO TRY AGAIN",tone);
+        }
+        ctx.textAlign="left"; ctx.restore();
+      }
+      function drawMiniStat(x,y,color,label,sub){
+        withGlow(color,8,()=>{ ctx.beginPath(); ctx.arc(x,y-4,4,0,Math.PI*2); ctx.fillStyle=color; ctx.fill(); });
+        ctx.textAlign="left"; ctx.fillStyle=C.white; ctx.font="bold 10px 'Montserrat', sans-serif"; ctx.fillText(label,x+12,y-1);
+        ctx.fillStyle="rgba(190,170,210,0.6)"; ctx.font="9px 'Montserrat', sans-serif"; ctx.fillText(sub,x+12,y+12);
+        ctx.textAlign="center";
+      }
+      function drawCta(cx,cy,text,tone){
+        ctx.font="11px 'Montserrat', sans-serif"; const w=ctx.measureText(text).width+50;
+        const x=cx-w/2,y=cy-18,h=34; const glow=pulse(2.5,0.25,0.6);
+        ctx.save(); ctx.shadowBlur=14*glow+5; ctx.shadowColor=tone;
+        rr(x,y,w,h,17); ctx.strokeStyle=tone; ctx.lineWidth=1.4; ctx.fillStyle="rgba(157,123,234,0.08)"; ctx.fill(); ctx.stroke(); ctx.restore();
+        ctx.fillStyle=C.goldBright; ctx.fillText(text,cx,cy+4);
+      }
+
+      /* ====================== Tarot symbols ====================== */
+      function cap(s){ return s[0].toUpperCase()+s.slice(1); }
+      function drawTarotArt(card,x,y,w,h,accent){
+        ctx.save(); rr(x,y,w,h,7);
+        const ag=ctx.createLinearGradient(x,y,x,y+h); ag.addColorStop(0,"#0e0920"); ag.addColorStop(1,"#070411");
+        ctx.fillStyle=ag; ctx.fill(); ctx.clip();
+        softGlow(x+w/2,y+h/2,w*0.55,"rgba(196,168,255,0.12)");
+        ctx.restore();
+        rr(x,y,w,h,7); ctx.strokeStyle="rgba(227,193,120,0.22)"; ctx.lineWidth=1; ctx.stroke();
+        const cx=x+w/2,cy=y+h/2;
+        withGlow(accent||C.gold,12,()=>{
+          if (card.type==="minor") drawMinorSymbol(card.suit,cx,cy,Math.min(w,h)*0.34,accent);
+          else drawMajorSymbol(card.name,cx,cy,Math.min(w,h)*0.28);
+        });
+      }
+      function drawMinorSymbol(suit,cx,cy,s,accent){
+        const col=accent||C.gold; ctx.fillStyle=col; ctx.strokeStyle=col; ctx.lineWidth=1.5;
+        if (suit==="coins"){
+          ctx.beginPath(); ctx.arc(cx,cy,s,0,Math.PI*2); ctx.stroke();
+          ctx.beginPath(); ctx.arc(cx,cy,s*0.8,0,Math.PI*2); ctx.stroke();
+          drawStar(cx,cy,s*0.6,s*0.25,5,col); return;
+        }
+        if (suit==="swords"){
+          ctx.beginPath(); ctx.moveTo(cx,cy-s); ctx.lineTo(cx+4,cy+s*0.3); ctx.lineTo(cx-4,cy+s*0.3); ctx.closePath(); ctx.fill();
+          ctx.fillRect(cx-14,cy+s*0.1,28,3); ctx.fillRect(cx-2,cy+s*0.3,4,s*0.4);
+          ctx.beginPath(); ctx.arc(cx,cy+s*0.7,3,0,Math.PI*2); ctx.fill(); return;
+        }
+        if (suit==="cups"){
+          ctx.beginPath(); ctx.moveTo(cx-10,cy-s*0.6); ctx.quadraticCurveTo(cx,cy+s*0.4,cx+10,cy-s*0.6);
+          ctx.lineTo(cx+8,cy-s*0.8); ctx.lineTo(cx-8,cy-s*0.8); ctx.closePath(); ctx.stroke();
+          ctx.fillRect(cx-1.5,cy-s*0.2,3,s*0.7);
+          ctx.beginPath(); ctx.moveTo(cx-8,cy+s*0.5); ctx.lineTo(cx+8,cy+s*0.5); ctx.lineTo(cx,cy+s*0.2); ctx.closePath(); ctx.fill(); return;
+        }
+        ctx.beginPath(); ctx.moveTo(cx-2,cy+s*0.7); ctx.lineTo(cx+2,cy-s*0.7); ctx.lineWidth=3; ctx.stroke();
+        ctx.fillStyle="#ffffff"; ctx.beginPath(); ctx.arc(cx+2,cy-s*0.7,4,0,Math.PI*2); ctx.fill();
+      }
+      function drawMajorSymbol(name,cx,cy,s){
+        ctx.strokeStyle=C.gold; ctx.fillStyle=C.gold; ctx.lineWidth=1.5;
+        if (name==="The Tower"){
+          ctx.strokeRect(cx-12,cy-s*0.6,24,s*1.2);
+          ctx.beginPath(); ctx.moveTo(cx-12,cy-s*0.4); ctx.lineTo(cx+2,cy); ctx.lineTo(cx-8,cy+s*0.4); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(cx-16,cy-s*0.6); ctx.lineTo(cx+16,cy-s*0.6); ctx.lineTo(cx,cy-s*1.0); ctx.closePath(); ctx.fill(); return;
+        }
+        if (name==="The Star"){ drawStar(cx,cy,s,s*0.4,8,C.gold); return; }
+        if (name==="Wheel of Fortune"){
+          ctx.beginPath(); ctx.arc(cx,cy,s,0,Math.PI*2); ctx.stroke();
+          ctx.beginPath(); ctx.arc(cx,cy,s*0.4,0,Math.PI*2); ctx.stroke();
+          for (let i=0;i<4;i++){ const a=(i/4)*Math.PI*2; ctx.beginPath(); ctx.moveTo(cx-Math.cos(a)*s,cy-Math.sin(a)*s); ctx.lineTo(cx+Math.cos(a)*s,cy+Math.sin(a)*s); ctx.stroke(); }
+          return;
+        }
+        ctx.beginPath(); ctx.arc(cx,cy,s,0,Math.PI*2); ctx.stroke(); drawStar(cx,cy,s*0.6,s*0.25,4,C.gold);
+      }
+      function drawStar(cx,cy,outer,inner,points,fillStyle){
+        ctx.save(); ctx.fillStyle=fillStyle; ctx.beginPath();
+        for (let i=0;i<points*2;i++){
+          const r=i%2===0?outer:inner; const a=(i*Math.PI)/points-Math.PI/2;
+          const px=cx+Math.cos(a)*r, py=cy+Math.sin(a)*r;
+          if (i===0) ctx.moveTo(px,py); else ctx.lineTo(px,py);
+        }
+        ctx.closePath(); ctx.fill(); ctx.restore();
+      }
+      function getCardOutcomePreview(card,orientation){
+        if (card.type==="minor"){ const e=MINOR_EFFECTS[card.suit][orientation]; return `Destiny: ${formatDelta(e.destiny,"")} // Sanity: ${formatDelta(e.sanity,"")}`; }
+        if (card.name==="Wheel of Fortune") return orientation==="upright"?"Destiny: -10..+14 // Sanity: -6..+6":"Destiny: -16..+20 // Sanity: -10..+8";
+        const e=MAJOR_EFFECTS[card.name][orientation]; return `Destiny: ${formatDelta(e.destiny,"")} // Sanity: ${formatDelta(e.sanity,"")}`;
+      }
+      function wrapText(text,x,y,maxWidth,lineHeight,centered){
+        const words=text.split(" "); let line=""; let lineY=y;
+        const prev=ctx.textAlign; if (centered) ctx.textAlign="center";
+        const anchorX=centered?x+maxWidth/2:x;
+        for (let i=0;i<words.length;i++){
+          const test=line+words[i]+" "; const m=ctx.measureText(test);
+          if (m.width>maxWidth&&i>0){ ctx.fillText(line,anchorX,lineY); line=`${words[i]} `; lineY+=lineHeight; }
+          else line=test;
+        }
+        ctx.fillText(line,anchorX,lineY); ctx.textAlign=prev;
+      }
+
+      /* ====================== Loop + test hooks (unchanged API) ====================== */
+      function frame(ts){ const dt=Math.min(0.05,(ts-lastTs)/1000); lastTs=ts; update(dt); render(); requestAnimationFrame(frame); }
+      requestAnimationFrame(frame);
+      window.advanceTime=(ms)=>{ const steps=Math.max(1,Math.round(ms/(1000/60))); for(let i=0;i<steps;i++) update(1/60); render(); };
+      window.render_game_to_text=()=>{
+        return JSON.stringify({
+          coordinateSystem:"origin top-left, +x right, +y down",
+          mode:state.mode, phase:state.phase,
+          seeker:{ x:Number(state.seekerX.toFixed(2)), y:TRACK_Y },
+          stats:{ destiny:state.destiny, destinyTarget:DESTINY_TARGET, sanity:state.sanity, momentum:state.momentum, turnsLeft:state.turnsLeft },
+          currentCard:state.currentCard, finalReading:state.finalReading,
+          objective:"Reach destiny target before sanity reaches 0 or turns run out"
+        });
+      };
+    </script>
   </body>
 </html>
